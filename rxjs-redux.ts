@@ -89,7 +89,7 @@ Zone.current.fork({ name: 'myZone' }).runGuarded(() => {
 
   /* 
     OUTPUT: 0 -> 1 -> 2 -> 4 -> 3 
-    outputs are not determined by async resolution order but by action firing order.
+    outputs are not determined by async resolution order but by action dispatched order.
   */
   dispatcher$.next(promiseAction(new IncrementAction(1), 100));  /* OUTPUT> counter: 1 */
   dispatcher$.next(new IncrementAction(1));  /* OUTPUT> counter: 2 */
