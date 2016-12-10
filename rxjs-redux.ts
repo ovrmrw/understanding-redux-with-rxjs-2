@@ -33,19 +33,17 @@ interface AppState {
 }
 
 
+const initialState: AppState = {
+  increment: {
+    counter: 0
+  }
+};
+
+
 ///////////////////////////////// Redux
 Zone.current.fork({ name: 'myZone' }).runGuarded(() => {
 
   console.log('zone name:', Zone.current.name); /* OUTPUT> zone name: myZone */
-
-  const initialState: AppState = {
-    increment: {
-      counter: 0
-    }
-  };
-
-  let counter: number;
-
 
   const dispatcher$ = new Subject<Action | Promise<Action>>(); // Dispatcher
   const provider$ = new BehaviorSubject<AppState>(initialState); // Provider
@@ -53,8 +51,12 @@ Zone.current.fork({ name: 'myZone' }).runGuarded(() => {
 
   const dispatcherQueue$ = // Queue
     dispatcher$
-      .concatMap(action => { // Async actions are resolved here.
-        return action instanceof Promise ? Observable.from(action) : Observable.of(action);
+      .concatMap(action => { // async actions are resolved here.
+        if (action instanceof Promise || action instanceof Observable) {
+          return Observable.from(action);
+        } else {
+          return Observable.of(action);
+        }
       })
       .share();
 
@@ -81,24 +83,30 @@ Zone.current.fork({ name: 'myZone' }).runGuarded(() => {
     .map(appState => appState.increment)
     .distinctUntilChanged((oldValue, newValue) => lodash.isEqual(oldValue, newValue)) // restrict same values to pass through.
     .subscribe(state => {
-      counter = state.counter;
-      console.log('counter:', counter); /* (First time) OUTPUT> counter: 0 */
+      console.log('counter:', state.counter); /* (First time) OUTPUT> counter: 0 */
     });
 
 
-  /* OUTPUT: 0 -> 1 -> 2 -> 4 -> 3 */
-  dispatcher$.next(asyncAction(new IncrementAction(1), 100));  /* OUTPUT> counter: 1 */
+  /* 
+    OUTPUT: 0 -> 1 -> 2 -> 4 -> 3 
+    outputs are not determined by async resolution order but by action firing order.
+  */
+  dispatcher$.next(promiseAction(new IncrementAction(1), 100));  /* OUTPUT> counter: 1 */
   dispatcher$.next(new IncrementAction(1));  /* OUTPUT> counter: 2 */
-  dispatcher$.next(asyncAction(new IncrementAction(0), 50));  /* OUTPUT> (restricted) */
-  dispatcher$.next(asyncAction(new IncrementAction(2), 0));  /* OUTPUT> counter: 4 */
+  dispatcher$.next(promiseAction(new IncrementAction(0), 50));  /* OUTPUT> (restricted) */
+  dispatcher$.next(observableAction(new IncrementAction(2), 70));  /* OUTPUT> counter: 4 */
   dispatcher$.next(new IncrementAction(-1)); /* OUTPUT> counter: 3 */
 });
 
 
 
 ///////////////////////////////// Helper
-function asyncAction(action: Action, timeout: number): Promise<Action> {
+function promiseAction(action: Action, timeout: number): Promise<Action> {
   return new Promise<Action>(resolve => {
     setTimeout(() => resolve(action), timeout);
   });
+}
+
+function observableAction(action: Action, timeout: number): Observable<Action> {
+  return Observable.of(action).delay(timeout);
 }
