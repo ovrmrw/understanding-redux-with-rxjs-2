@@ -45,7 +45,7 @@ Zone.current.fork({ name: 'myZone' }).runGuarded(() => {
 
   console.log('zone name:', Zone.current.name); /* OUTPUT> zone name: myZone */
 
-  const dispatcher$ = new Subject<Action | Promise<Action>>(); // Dispatcher
+  const dispatcher$ = new Subject<Action | Promise<Action> | Observable<Action>>(); // Dispatcher
   const provider$ = new BehaviorSubject<AppState>(initialState); // Provider
 
 
@@ -70,6 +70,7 @@ Zone.current.fork({ name: 'myZone' }).runGuarded(() => {
           return state;
         }
       }, initialState.increment),
+
       (increment): AppState => { // projection
         return Object.assign<{}, AppState, {}>({}, initialState, { increment }); // always create new state object!
       }
@@ -92,9 +93,9 @@ Zone.current.fork({ name: 'myZone' }).runGuarded(() => {
     outputs are not determined by async resolution order but by action dispatched order.
   */
   dispatcher$.next(promiseAction(new IncrementAction(1), 100));  /* OUTPUT> counter: 1 */
-  dispatcher$.next(new IncrementAction(1));  /* OUTPUT> counter: 2 */
-  dispatcher$.next(promiseAction(new IncrementAction(0), 50));  /* OUTPUT> (restricted) */
-  dispatcher$.next(observableAction(new IncrementAction(2), 70));  /* OUTPUT> counter: 4 */
+  dispatcher$.next(promiseAction(new IncrementAction(1), 50));  /* OUTPUT> counter: 2 */
+  dispatcher$.next(observableAction(new IncrementAction(0), 100));  /* OUTPUT> (restricted) */
+  dispatcher$.next(observableAction(new IncrementAction(2), 50));  /* OUTPUT> counter: 4 */
   dispatcher$.next(new IncrementAction(-1)); /* OUTPUT> counter: 3 */
 });
 
