@@ -62,8 +62,8 @@ Zone.current.fork({ name: 'myZone' }).runGuarded(() => {
 
 
   Observable // ReducerContainer
-    .zip<AppState>(...[
-      dispatcherQueue$.scan<IncrementState>((state, action) => { // Reducer
+    .zip(...[
+      dispatcherQueue$.scan((state: IncrementState, action) => { // Reducer
         if (action instanceof IncrementAction) {
           return { counter: state.counter + action.num };
         } else {
