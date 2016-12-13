@@ -1,7 +1,7 @@
 import 'core-js';
 import 'zone.js/dist/zone-node';
 import * as lodash from 'lodash';
-import { Observable, Subject, BehaviorSubject } from 'rxjs/Rx';
+import { Observable, Subject, BehaviorSubject } from 'rxjs';
 declare const Zone: any;
 
 
